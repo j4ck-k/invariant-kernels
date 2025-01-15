@@ -1,4 +1,4 @@
-from sage.all import binomial, WeightedIntegerVectors, factorial, Partitions
+from sage.all import *
 import numpy as np
 
 from scipy.sparse import block_diag
@@ -184,7 +184,7 @@ class InvariantTF:
         basis_X[0] = np.ones(X.shape[0])
         basis_Y[0] = np.ones(Y.shape[0])
 
-        for i in range(1, rank):
+        for i in tqdm(range(1, rank)):
             part = self.parts[i]
 
             basis_X[i] = np.array([np.prod([esp_X[j][p] for p in part]) for j in range(X.shape[0])])
@@ -196,7 +196,7 @@ class InvariantTF:
         N = X.shape[0]
         mat = np.zeros((N, N))
 
-        for i in range(N):
+        for i in tqdm(range(N)):
             for j in range(i, N):
                 v = self.evaluate(X[i], X[j])
                 mat[i][j] = v
@@ -229,7 +229,7 @@ class InvariantTF:
         self.train_data = X
         self.train_values = y
         self.mean_value = np.mean(y)
-        self.training_error = self.relative_error(X, y)
+        self.training_error = np.mean(((y - M@alpha)/(y))**2)
     
     def mse(self, X, y):
         
@@ -436,6 +436,71 @@ class SetClassification:
         return 1-np.count_nonzero(y - self.predict(X))/X.shape[0]
 
 
+class NonInvariantTF:
+
+    def __init__(self, d, n):
+        self.degree = n
+        self.dimension = d
+        self.alpha = None
+        self.train_data = None
+    
+    def evaluate(self, x, y):
+
+        return np.sum([(x@y)**(i+1)/factorial(i+1) for i in range(self.degree)])
+    
+    def matrix(self, Y, X):
+
+        mat = np.zeros((X.shape[0], Y.shape[0]))  
+        for i in tqdm(range(X.shape[0])):
+            #print(f'Row {i}')
+            for j in range(Y.shape[0]):
+            #    print(f'column {j}')
+                mat[i][j] = self.evaluate(X[i], Y[j])
+
+        return mat
+    
+    def gram_matrix(self, X):
+        mat = np.zeros((X.shape[0], X.shape[0]))
+
+        for i in tqdm(range(X.shape[0])):
+            #print(f'Row {i}')
+            for j in range(i, X.shape[0]):
+                v = self.evaluate(X[i], X[j])
+                mat[i][j] = v
+                mat[j][i] = v
+
+        return mat
+
+    def predict(self, X):
+
+        P = self.matrix(X, self.train_data)
+
+        return P @ self.alpha
+
+    def rrse(self, X, Y):
+
+        return np.sqrt(np.sum((Y-self.predict(X))**2)/np.sum((Y - self.mean_value)**2))
+    
+    def relative_error(self, X, Y):
+
+        return np.mean(((Y - self.predict(X))/(Y))**2)
+
+    def train(self, X, y, lam):
+
+        N = X.shape[0]
+        M = self.gram_matrix(X)
+
+        alpha = np.linalg.solve(M + lam * np.eye(N), y)
+
+        self.alpha = alpha
+        self.train_data = X
+        self.train_values = y
+        self.mean_value = np.mean(y)
+        self.training_error = np.mean(((y - M@alpha)/(y))**2)
+    
+    def mse(self, X, y):
+        
+        return np.mean((y - self.predict(X))**2)
         
 
 
