@@ -39,7 +39,7 @@ for m in range(2, 6):
     rank = np.sum([Partitions(i).cardinality() for i in range(m+1)])
 
     for i in range(10):
-        train_data = np.load(f'Data/Poly-Generalization/noisy_train_d100_m{m}_poly{i}.npz')
+        train_data = np.load(f'Data/Poly-Generalization/train/noisy_train_d100_m{m}_poly{i}.npz')
         train_X = train_data['X']
         train_y = train_data['y']
 
@@ -52,7 +52,7 @@ for m in range(2, 6):
 
         for k in range(1, 11):
             d = k*100
-            test_data = np.load(f'Data/Poly-Generalization/noisy_test_d{d}_m{m}_poly{i}.npz')
+            test_data = np.load(f'Data/Poly-Generalization/d{d}/noisy_test_d{d}_m{m}_poly{i}.npz')
             test_X = test_data['X']
             test_y = test_data['y']
 
